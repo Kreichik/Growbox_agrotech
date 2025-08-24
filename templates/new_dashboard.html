@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOT Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        html {
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0 50px;
+            box-sizing: border-box;
+            background-color: #121212;
+            color: #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: inherit;
+        }
+
+        /* === Video Styling === */
+        #cameraVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cover the area like the image */
+            border-radius: 8px; /* Match item rounding */
+            display: block; /* Remove potential extra space */
+        }
+
+        /* === End Video Styling === */
+
+
+        /* --- Header Styles --- */
+        .app-header {
+            width: 100%;
+            max-width: 1600px;
+            padding: 15px 0;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            flex-shrink: 0;
+            gap: 20px;
+        }
+
+        .burger-btn {
+            background: none;
+            border: none;
+            color: #E0E0E0;
+            cursor: pointer;
+            padding: 5px;
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 20px; /* Adjusted height for spacing */
+            width: 28px; /* Adjusted width */
+            box-sizing: content-box;
+        }
+
+        .burger-btn span {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: #E0E0E0;
+            border-radius: 3px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .header-title {
+            font-size: clamp(1.2rem, 3vmin, 1.6rem);
+            font-weight: bold;
+            margin: 0;
+            color: #E0E0E0;
+            line-height: 1;
+        }
+
+        /* --- End Header Styles --- */
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: min-content minmax(150px, 1.5fr) minmax(150px, 1.5fr) minmax(150px, 1.5fr);
+            gap: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 1600px;
+            flex-grow: 1;
+            background-color: transparent;
+            overflow: visible;
+            min-height: 0;
+        }
+
+        /* --- Footer Styles --- */
+        .app-footer {
+            width: 100%;
+            text-align: center;
+            padding: 10px 0;
+            color: #888888;
+            font-size: clamp(0.8rem, 1.5vmin, 0.9rem);
+            flex-shrink: 0;
+        }
+
+        /* --- End Footer Styles --- */
+
+        /* --- Grid Item Styles --- */
+        .grid-item, .sub-item {
+            background-color: #1E1E1E;
+            color: #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            text-align: left;
+            padding: 15px;
+            font-size: clamp(0.8rem, 1.5vmin, 1rem);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .grid-item .title, .sub-item .title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: clamp(0.85rem, 1.6vmin, 1.05rem);
+            color: #cccccc;
+            flex-shrink: 0;
+            padding-bottom: 5px;
+            /* Optional: align title center for gauge? */
+            text-align: center;
+        }
+
+        .grid-item .content { /* Keep general content centering */
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 0;
+        }
+
+        /* Specific override for pH gauge content if needed */
+        .item9 .content {
+            /*justify-content: flex-start; !* Align gauge towards top *!*/
+            align-items: center; /* Keep it centered horizontally */
+            /*padding-top: 10px; !* Add some space above gauge *!*/
+        }
+
+        /* --- Other Grid Item Styles (Date/Cam, Merged, Weather, etc.) --- */
+        .item1-container {
+            grid-column: 1 / 2;
+            grid-row: 1 / 2;
+            background-color: transparent;
+            padding: 0;
+            display: flex;
+            gap: 15px;
+            box-shadow: none;
+        }
+
+        .sub-item {
+            flex: 1;
+            font-size: clamp(0.7rem, 1.4vmin, 0.9rem);
+            padding: 10px;
+        }
+
+        .sub-item select {
+            width: 100%;
+            padding: 8px 10px;
+            margin-top: 5px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background-color: #333;
+            color: #E0E0E0;
+            font-size: clamp(0.75rem, 1.4vmin, 0.95rem);
+            cursor: pointer;
+        }
+
+        .item-merged {
+            grid-column: 2 / span 2;
+            grid-row: 1 / span 2;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: stretch;
+            align-items: stretch;
+        }
+
+        .item-merged .content {
+            padding: 0;
+            justify-content: flex-start;
+            align-items: stretch;
+        }
+
+        .item-merged img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .item4 {
+            grid-column: 4 / 5;
+            grid-row: 1 / 2;
+            padding: 5px;
+        }
+
+        .item4 .content {
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .item4 .content img {
+            height: auto;
+        }
+
+        .item4 .content span {
+            font-size: clamp(1.2rem, 3vmin, 2rem);
+            font-weight: bold;
+        }
+
+        /* Temperature Gauge block (item5) - MOVED TO RIGHT */
+        .item5 {
+            grid-column: 4 / 5; /* Formerly Light Level's spot */
+            grid-row: 2 / 3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .item5 .content .placeholder-text { /* This was for old placeholder, gauge has .gauge-container */
+            margin-top: 15px;
+            font-size: clamp(1rem, 2.5vmin, 1.5rem);
+            color: #aaa;
+        }
+
+        .item5 .content .value-text { /* This was for old placeholder */
+            margin-top: 10px;
+            font-size: clamp(1.4rem, 3.5vmin, 2.2rem);
+            font-weight: bold;
+            color: #4db8ff;
+        }
+
+        /* Light Level block (item8) - MOVED TO LEFT */
+        .item8 {
+            grid-column: 1 / 2; /* Formerly Temperature's spot */
+            grid-row: 2 / 3;
+        }
+
+        .item8 .content {
+            flex-direction: row;
+            /* justify-content: space-around;  */
+            align-items: center;
+            gap: 10px;
+        }
+
+        .item8 .content img {
+            /* width: clamp(35px, 7vmin, 60px);  */
+            width: 110px; /* Fixed size for icon */
+            height: auto;
+        }
+
+        .item8 .content span {
+            font-size: clamp(1.1rem, 2.8vmin, 1.8rem);
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* --- pH Gauge Specific Styles (Copied & Adapted) --- */
+        .item9 {
+            grid-column: 1 / 2;
+            grid-row: 3 / 4;
+        }
+
+        /* Обертка для шкалы и значения (для позиционирования) */
+        .ph-scale-wrapper {
+            position: relative; /* Нужно для абсолютного позиционирования текста */
+            display: inline-block; /* Чтобы обертка была по размеру контента */
+            width: 100%; /* Займет доступную ширину в .content */
+            max-width: 300px; /* Ограничим макс ширину внутри grid-item */
+            flex-shrink: 0; /* Prevent shrinking in flex container */
+        }
+
+        /* Стили для встроенного SVG */
+        .ph-scale-svg {
+            display: block; /* Убираем лишнее пространство под элементом */
+            width: 100%; /* SVG будет масштабироваться */
+            height: auto; /* Сохраняем пропорции */
+            /* margin: 0 auto; /* Центрируется через align-items:center родителя */
+        }
+
+        /* Стили цветов секторов шкалы */
+        .cls-1 {
+            fill: #06b2ad;
+        }
+
+        .cls-2 {
+            fill: #7fb93c;
+        }
+
+        .cls-3 {
+            fill: #544c98;
+        }
+
+        .cls-4 {
+            fill: #e8de01;
+        }
+
+        .cls-5 {
+            fill: #21ad6a;
+        }
+
+        .cls-6 {
+            fill: #32a440;
+        }
+
+        .cls-7 {
+            fill: #3e2b7a;
+        }
+
+        .cls-8 {
+            fill: #438ac5;
+        }
+
+        .cls-9 {
+            fill: #adcb30;
+        }
+
+        .cls-10 {
+            fill: #f67716;
+        }
+
+        .cls-11 {
+            fill: #5e4393;
+        }
+
+        .cls-12 {
+            fill: #354f99;
+        }
+
+        .cls-13 {
+            fill: #ebbd11;
+        }
+
+        .cls-14 {
+            fill: #49af43;
+        }
+
+        .cls-15 {
+            fill: #e51920;
+        }
+
+        /* Общий стиль для секторов */
+        .cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15 {
+            stroke-width: 0px;
+        }
+
+        /* Стиль для текста (цифры на шкале) */
+        .cls-16 {
+            fill: #b3b3b3;
+            font-family: 'Acumin Variable Concept', 'AcuminConcept-Regular', Arial, sans-serif;
+            font-size: 15.92px; /* May need adjustment if SVG scales significantly */
+        }
+
+        /* Отображение текущего значения pH */
+        .ph-value-display {
+            position: absolute;
+            left: 50%;
+            /* Adjust top based on visual appearance after scaling */
+            top: 85%; /* Start value, might need tweaking */
+            transform: translate(-50%, -50%);
+            /* Adjust font size based on container size */
+            font-size: clamp(1.8em, 6vmin, 2.8em);
+            font-weight: bold;
+            transition: color 0.3s ease;
+            white-space: nowrap; /* Prevent wrapping */
+        }
+
+        /* --- End pH Gauge Styles --- */
+
+
+        /* --- Other Grid Items (Row 3 & 4) --- */
+        .item10 {
+            grid-column: 2 / 3;
+            grid-row: 3 / 4;
+        }
+
+        .item11 {
+            grid-column: 3 / 4;
+            grid-row: 3 / 4;
+        }
+
+        .item12 {
+            grid-column: 4 / 5;
+            grid-row: 3 / 4;
+        }
+
+        .bottom-row-container {
+            grid-column: 1 / -1;
+            grid-row: 4 / 5;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            background-color: transparent;
+            padding: 0;
+            overflow: visible;
+            box-shadow: none;
+        }
+
+        /* --- Chart Canvas Styling --- */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            min-height: 150px;
+        }
+
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 100%;
+        }
+
+        .gauge-container {
+            background-color: #1E1E1E;
+            padding: 25px;
+            border-radius: 15px;
+            /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); */
+            text-align: center;
+            width: 300px;
+        }
+
+        #chatbox table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        #chatbox th, #chatbox td {
+            border: 1px solid #555; /* Светлые границы для темной темы */
+            padding: 8px;
+            text-align: left;
+        }
+        #chatbox th {
+            background-color: #2a2a2a; /* Фон для заголовков таблицы */
+        }
+        #chatbox code {
+            background-color: #2c3e50; /* Фон для инлайн-кода */
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        #chatbox pre {
+            background-color: #1e1e1e; /* Фон для блоков кода */
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto; /* Горизонтальная прокрутка для длинного кода */
+        }
+
+        /* Заголовок виджета */
+        .gauge-title {
+            color: #FFFFFF;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+
+        /* Контейнер для самой шкалы */
+        .gauge {
+            position: relative;
+            width: 100%;
+            padding-top: 50%;
+            margin: 0 auto;
+        }
+
+        /* Тело шкалы */
+        .gauge__body {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #333333;
+            border-top-left-radius: 150px;
+            border-top-right-radius: 150px;
+            overflow: hidden;
+        }
+
+        /* Заполняющая часть шкалы */
+        .gauge__fill {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #2A9D8F; /* Начальный цвет будет задан JS */
+            transform-origin: center top;
+            transform: rotate(0.5turn);
+            /* Плавный переход для поворота остается, цвет будет меняться мгновенно
+               при каждом вызове setTemperature, но т.к. цвет вычисляется плавно,
+               визуально будет градиент при анимации температуры */
+            transition: transform 0.5s ease-out;
+        }
+
+        /* --- Chart Canvas Styling --- */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            min-height: 150px;
+        }
+
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 100%;
+        }
+
+        .gauge-container {
+            background-color: #1E1E1E;
+            padding: 25px;
+            border-radius: 15px;
+            /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); */
+            text-align: center;
+            width: 300px;
+        }
+
+        /* "Дырка" в центре */
+        .gauge__cover {
+            position: absolute;
+            top: 40%;
+            left: 20%;
+            width: 60%;
+            height: 120%;
+            background: #1E1E1E;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        /* Текстовое значение температуры - ИЗМЕНЕНО ПОЛОЖЕНИЕ */
+        .gauge__value {
+            position: absolute;
+            top: 90%; /* <<<<<<< ИЗМЕНЕНО НА 90% */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FFFFFF;
+            font-size: 2.8em;
+            font-weight: bold;
+            z-index: 2;
+            white-space: nowrap;
+        }
+
+
+        /* --- Media Queries --- */
+        @media (max-width: 1024px) {
+            body {
+                padding: 0 30px;
+            }
+
+            .grid-container {
+                gap: 15px;
+                padding: 15px;
+                grid-template-rows: min-content minmax(140px, 1.5fr) minmax(140px, 1.5fr) minmax(140px, 1.5fr);
+            }
+
+            .grid-item, .sub-item {
+                padding: 12px;
+            }
+
+            .bottom-row-container {
+                gap: 15px;
+            }
+
+            .chart-container {
+                min-height: 140px;
+            }
+
+            .ph-scale-wrapper {
+                max-width: 250px;
+            }
+
+            /* Smaller max size */
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0 15px;
+            }
+
+            .app-header {
+                margin-bottom: 10px;
+                gap: 15px;
+            }
+
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: auto;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            /* Grid item reassignments */
+            .item1-container {
+                grid-column: 1 / 2;
+                grid-row: 1 / 2;
+            }
+
+            .item4 {
+                grid-column: 2 / 3;
+                grid-row: 1 / 2;
+            }
+
+            .item-merged {
+                grid-column: 1 / -1;
+                grid-row: 2 / 3;
+            }
+
+            /* Temperature Gauge (item5) - new mobile position */
+            .item5 {
+                grid-column: 2 / 3; /* Was 1 / 2 */
+                grid-row: 3 / 4;
+            }
+
+            /* Light Level (item8) - new mobile position */
+            .item8 {
+                grid-column: 1 / 2; /* Was 2 / 3 */
+                grid-row: 3 / 4;
+            }
+
+            .item9 { /* pH level - remains */
+                grid-column: 1 / 2;
+                grid-row: 4 / 5;
+            }
+
+            .item10 { /* Substrate Moisture - remains */
+                grid-column: 2 / 3;
+                grid-row: 4 / 5;
+            }
+
+            .item11 { /* Humidity - remains */
+                grid-column: 1 / 2;
+                grid-row: 5 / 6;
+            }
+
+            .item12 { /* Temperature Chart - remains */
+                grid-column: 2 / 3;
+                grid-row: 5 / 6;
+            }
+
+            .bottom-row-container {
+                grid-column: 1 / -1;
+                grid-row: 6 / 7;
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                min-height: 160px;
+            }
+
+            .app-footer {
+                padding: 8px 0;
+            }
+
+            .ph-scale-wrapper {
+                max-width: 200px;
+            }
+
+            /* Even smaller */
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0 10px;
+            }
+
+            .app-header {
+                gap: 10px;
+            }
+
+            .burger-btn {
+                height: 18px;
+                width: 24px;
+            }
+
+            .burger-btn span {
+                height: 2.5px;
+            }
+
+            .grid-container {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .item1-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .header-title {
+                font-size: 1.1rem;
+            }
+
+            .app-footer {
+                font-size: 0.75rem;
+            }
+
+            .chart-container {
+                min-height: 150px;
+            }
+
+            .ph-scale-wrapper {
+                max-width: 180px;
+            }
+
+            /* Slightly adjust */
+            .ph-value-display {
+                font-size: clamp(1.6em, 5vmin, 2.2em);
+                top: 88%; /* May need different % on mobile */
+            }
+        }
+
+        .typing-indicator {
+    display: flex;
+    align-items: center;
+    padding: 10px 0; /* Отступы сверху и снизу */
+}
+
+.typing-indicator span {
+    height: 8px;
+    width: 8px;
+    background-color: #aaa;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 2px;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-of-type(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-of-type(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    } 40% {
+        transform: scale(1.0);
+    }
+}
+
+    </style>
+</head>
+
+<script>
+    // --- ГЛАВНОЕ ИЗМЕНЕНИЕ: Хранилище истории чата ---
+    // Системная инструкция задается здесь, в самом начале диалога.
+    let chatHistory = [];
+    let lastDataTimestamp = null;
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Код для открытия/закрытия окна чата можно оставить без изменений
+        document.getElementById("chatToggle").addEventListener('click', () => {
+            const popup = document.getElementById("chatPopup");
+            popup.style.display = popup.style.display === "none" ? "flex" : "none";
+        });
+
+        // Добавим обработчик нажатия Enter в поле
+         const chatInput = document.getElementById("chatInput");
+
+    // --- ЛОГИКА АВТОРАСШИРЕНИЯ TEXTAREA ---
+    if (chatInput) {
+        chatInput.addEventListener("input", () => {
+            // Сначала сбрасываем высоту, чтобы поле могло сжаться, если текст удален
+            chatInput.style.height = "auto";
+            // Устанавливаем высоту равной высоте прокрутки содержимого
+            chatInput.style.height = (chatInput.scrollHeight) + "px";
+        });
+
+        // Также обновляем обработчик нажатия Enter, чтобы он работал с textarea
+        chatInput.addEventListener("keypress", function(event) {
+            // Отправляем по Enter, если НЕ нажат Shift (для переноса строки)
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault(); // Отменяем стандартное поведение (перенос строки)
+                sendMessage();
+                // После отправки сбрасываем высоту
+                chatInput.style.height = "auto";
+            }
+        });
+    }
+    });
+
+    async function sendMessage() {
+    const input = document.getElementById("chatInput");
+    const message = input.value.trim();
+    if (!message) return;
+
+    const chatbox = document.getElementById("chatbox");
+
+    // 1. Отображаем сообщение пользователя
+    const userMessageDiv = document.createElement('div');
+    userMessageDiv.innerHTML = `<p><b>you:</b> ${message}</p>`;
+    chatbox.appendChild(userMessageDiv);
+
+    // Очищаем поле ввода и сбрасываем высоту
+    input.value = "";
+    input.style.height = "auto";
+    chatbox.scrollTop = chatbox.scrollHeight;
+
+    // --- 2. ДОБАВЛЯЕМ АНИМАЦИЮ ОЖИДАНИЯ ---
+    const typingIndicator = document.createElement('div');
+    typingIndicator.id = 'typing-indicator'; // Дадим ей ID, чтобы легко найти и удалить
+    typingIndicator.className = 'typing-indicator';
+    typingIndicator.innerHTML = `
+        <p style="margin-right: 5px; color: #aaa;"><b>AIBot:</b></p>
+        <span></span><span></span><span></span>
+    `;
+    chatbox.appendChild(typingIndicator);
+    chatbox.scrollTop = chatbox.scrollHeight; // Прокручиваем вниз, чтобы индикатор был виден
+
+    try {
+        const dateSelect = document.getElementById("dateSelect");
+        const selectedDate = dateSelect ? dateSelect.value : null;
+
+        const res = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: message,
+                history: chatHistory,
+                date_context: selectedDate,
+                // --- ОТПРАВЛЯЕМ TIMESTAMP ПРЕДЫДУЩЕГО КОНТЕКСТА ---
+                last_context_timestamp: lastDataTimestamp
+            })
+        });
+
+        // --- 3. УДАЛЯЕМ АНИМАЦИЮ ПЕРЕД ПОКАЗОМ ОТВЕТА ---
+        const indicatorToRemove = document.getElementById('typing-indicator');
+        if (indicatorToRemove) {
+            indicatorToRemove.remove();
+        }
+
+        const data = await res.json();
+
+        // 4. Отображаем реальный ответ бота
+        const botMessageDiv = document.createElement('div');
+        if (data.reply) {
+            const htmlReply = marked.parse(data.reply);
+            botMessageDiv.innerHTML = `<p><b>AIBot:</b></p>${htmlReply}`;
+
+            chatHistory.push({ "role": "user", "content": message });
+            chatHistory.push({ "role": "assistant", "content": data.reply });
+            if (data.new_context_timestamp) {
+                lastDataTimestamp = data.new_context_timestamp;
+            }
+        } else {
+            botMessageDiv.innerHTML = `<p><i>⚠️ Error: ${data.error || 'Could not get response'}</i></p>`;
+        }
+
+        chatbox.appendChild(botMessageDiv);
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+    } catch (err) {
+        // --- 5. УДАЛЯЕМ АНИМАЦИЮ В СЛУЧАЕ ОШИБКИ ---
+        const indicatorToRemove = document.getElementById('typing-indicator');
+        if (indicatorToRemove) {
+            indicatorToRemove.remove();
+        }
+        // Показываем сообщение об ошибке
+        const errorDiv = document.createElement('div');
+        errorDiv.innerHTML = `<p><i>⚠️ Network or server error. Check console.</i></p>`;
+        chatbox.appendChild(errorDiv);
+        console.error("Fetch error:", err);
+    }
+}
+</script>
+<body>
+<button id="chatToggle" style="
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    z-index: 9999;
+    background-color:#121212;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;">
+        <svg fill="#ffffff" width="48px" height="48px" viewBox="0 0 24 24" role="img" xmlns="http://www.w3.org/2000/svg"
+            stroke="#ffffff">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <title>OpenAI icon</title>
+                <path
+                    d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z">
+                </path>
+            </g>
+        </svg>
+    </button>
+<header class="app-header">
+    <!-- Сайд-меню -->
+  <div id="sideMenu" class="side-menu">
+    <button id="closeMenu" class="close-btn" aria-label="Close menu">×</button>
+    <nav class="side-nav">
+      <ul>
+        <li><a href="/dashboard-new">Dashboard</a></li>
+        <li><a href="/history">Manage</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Ваша остальная разметка -->
+  <button class="burger-btn" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+    <h1 class="header-title">IOT Dashboard</h1>
+</header>
+
+<div class="grid-container">
+    <!-- Ряд 1 -->
+    <div class="item1-container">
+                <div class="sub-item">
+            <div class="title">Date</div>
+            <div class="content">
+                <select name="date-select" id="dateSelect">
+                    <!-- Опции будут добавлены через JavaScript -->
+                </select>
+            </div>
+        </div>
+        <div class="sub-item">
+            <div class="title">Camera</div>
+            <div class="content">
+                <select name="camera-select" id="cameraSelect">
+                    <option value="cam1" selected>Camera 1</option> <!-- Default selection -->
+                    <option value="cam2">Camera 2</option>
+                    <!-- Add more options if you have more videos -->
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="grid-item item-merged">
+        <div class="content">
+            <!-- === Replace IMG with VIDEO === -->
+            <video id="cameraVideo" autoplay muted loop playsinline
+                   src="{{ url_for('static', filename='video1.MOV') }}">
+                Your browser does not support the video tag.
+            </video>
+            <!-- === End Replace === -->
+        </div>
+    </div>
+    <div class="grid-item item4">
+        <div class="content">
+            <img src="{{ url_for('static', filename='clear 1.png') }}" alt="Weather Icon">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span id="weather-status">20°C</span>
+                <span style="font-size: 0.8em; margin-top: 8px; font-weight: normal;">Astana</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ряд 2 - SWAPPED ITEMS -->
+
+    <!-- Light level (item8) - NOW ON THE LEFT -->
+    <div class="grid-item item8">
+        <div class="title">Light level</div>
+        <div class="content">
+            <span style="white-space: pre-line;" id="light-value">4<br>lm</span>
+            <img  id="lightIndicator" src="{{ url_for('static', filename='on.png') }}" alt="Lightbulb Icon">
+        </div>
+    </div>
+
+    <!-- Temperature Gauge (item5) - NOW ON THE RIGHT -->
+    <div class="grid-item item5">
+        <div class="gauge-container">
+            <div class="gauge-title">Temperature</div>
+            <div class="gauge">
+                <div class="gauge__body">
+                    <div class="gauge__fill" id="gauge-fill"></div>
+                    <div class="gauge__cover"></div>
+                </div>
+                <div class="gauge__value" id="gauge-value">25°C</div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Ряд 3 -->
+    <!-- === pH Gauge Integration START === -->
+    <div class="grid-item item9">
+        <div class="title">pH level</div>
+        <div class="content">
+            <div class="ph-scale-wrapper">
+                <!-- Встроенный SVG код шкалы pH -->
+                <svg id="_Слой_2" data-name="Слой 2" class="ph-scale-svg" xmlns="http://www.w3.org/2000/svg"
+                     viewBox="0 0 703 354.04">
+                    <!-- defs and styles for SVG (.cls-1 to .cls-16) -->
+                    <defs>
+                        <!-- Стили цветов и текста внутри SVG -->
+                        <style>
+                            .cls-1 {
+                                fill: #06b2ad;
+                            }
+
+                            .cls-2 {
+                                fill: #7fb93c;
+                            }
+
+                            .cls-3 {
+                                fill: #544c98;
+                            }
+
+                            .cls-4 {
+                                fill: #e8de01;
+                            }
+
+                            .cls-5 {
+                                fill: #21ad6a;
+                            }
+
+                            .cls-6 {
+                                fill: #32a440;
+                            }
+
+                            .cls-7 {
+                                fill: #3e2b7a;
+                            }
+
+                            .cls-8 {
+                                fill: #438ac5;
+                            }
+
+                            .cls-9 {
+                                fill: #adcb30;
+                            }
+
+                            .cls-10 {
+                                fill: #f67716;
+                            }
+
+                            .cls-11 {
+                                fill: #5e4393;
+                            }
+
+                            .cls-12 {
+                                fill: #354f99;
+                            }
+
+                            .cls-13 {
+                                fill: #ebbd11;
+                            }
+
+                            .cls-14 {
+                                fill: #49af43;
+                            }
+
+                            .cls-15 {
+                                fill: #e51920;
+                            }
+
+                            .cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15 {
+                                stroke-width: 0px;
+                            }
+
+                            .cls-16 {
+                                fill: #b3b3b3;
+                                font-family: 'Acumin Variable Concept', 'AcuminConcept-Regular', Arial, sans-serif;
+                                font-size: 15.92px;
+                            }
+                        </style>
+                    </defs>
+                    <g id="_Слой_1-2" data-name="Слой 1">
+                        <!-- Текст (цифры) -->
+                        <text class="cls-16" transform="translate(123.3 337.39) rotate(-85.78)">
+                            <tspan x="0" y="0">0</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(131.04 289.63) rotate(-73.98)">
+                            <tspan x="0" y="0">1</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(147.25 247.38) rotate(-62.23)">
+                            <tspan x="0" y="0">2</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(173.11 207.13) rotate(-50.18)">
+                            <tspan x="0" y="0">3</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(207.09 172.87) rotate(-38.15)">
+                            <tspan x="0" y="0">4</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(247.26 146.57) rotate(-26.09)">
+                            <tspan x="0" y="0">5</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(292.19 129.24) rotate(-13.9)">
+                            <tspan x="0" y="0">6</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(339.84 121.77) rotate(-1.94)">
+                            <tspan x="0" y="0">7</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(386.84 124.18) rotate(9.93)">
+                            <tspan x="0" y="0">8</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(433.48 136.61) rotate(22.11)">
+                            <tspan x="0" y="0">9</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(476.26 158.52) rotate(33.86)">
+                            <tspan x="0" y="0">10</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(517.77 193.24) rotate(47.4)">
+                            <tspan x="0" y="0">11</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(548.27 233.74) rotate(60.1)">
+                            <tspan x="0" y="0">12</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(569.97 282.77) rotate(73.64)">
+                            <tspan x="0" y="0">13</tspan>
+                        </text>
+                        <text class="cls-16" transform="translate(579.58 335.72) rotate(87.19)">
+                            <tspan x="0" y="0">14</tspan>
+                        </text>
+                        <!-- Фигуры (секторы) шкалы -->
+                        <g>
+                            <path class="cls-7"
+                                  d="M603,351.5c0-14.39-1.22-28.81-3.63-42.85l98.56-16.89c3.36,19.6,5.06,39.7,5.06,59.73h-100Z"/>
+                            <path class="cls-15"
+                                  d="M100,351.5H0c0-21.77,2.01-43.59,5.98-64.83l98.3,18.35c-2.84,15.21-4.28,30.85-4.28,46.49Z"/>
+                            <path class="cls-11"
+                                  d="M598.16,302.1c-3.03-15.23-7.51-30.24-13.31-44.62l92.74-37.41c8.13,20.15,14.4,41.19,18.65,62.52l-98.08,19.51Z"/>
+                            <path class="cls-10"
+                                  d="M105.59,298.48l-97.78-20.96c4.56-21.26,11.15-42.21,19.58-62.25l92.17,38.78c-6.02,14.3-10.72,29.25-13.97,44.43Z"/>
+                            <path class="cls-3"
+                                  d="M582.29,251.36c-6.18-14.22-13.74-27.96-22.48-40.83l82.76-56.14c12.21,18,22.78,37.21,31.43,57.11l-91.71,39.86Z"/>
+                            <path class="cls-13"
+                                  d="M122.24,247.93l-91.1-41.23c8.95-19.77,19.81-38.83,32.29-56.64l81.91,57.37c-8.93,12.75-16.7,26.38-23.09,40.51Z"/>
+                            <path class="cls-12"
+                                  d="M555.99,205.06c-9.06-12.63-19.36-24.49-30.61-35.26l69.15-72.24c15.68,15.01,30.05,31.56,42.7,49.19l-81.24,58.31Z"/>
+                            <path class="cls-4"
+                                  d="M149.24,202l-80.36-59.52c12.91-17.43,27.52-33.76,43.43-48.54l68.07,73.26c-11.4,10.6-21.88,22.3-31.13,34.8Z"/>
+                            <path class="cls-8"
+                                  d="M520.5,165.24c-11.53-10.47-24.08-19.9-37.3-28.05l52.45-85.14c18.47,11.38,35.99,24.55,52.07,39.16l-67.22,74.03Z"/>
+                            <path class="cls-9"
+                                  d="M185.32,162.72l-66.11-75.03c16.3-14.37,34.02-27.28,52.65-38.37l51.17,85.92c-13.34,7.95-26.03,17.19-37.71,27.49Z"/>
+                            <path class="cls-1"
+                                  d="M477.47,133.76c-13.45-7.8-27.68-14.37-42.31-19.53l33.25-94.31c20.48,7.22,40.41,16.42,59.23,27.33l-50.17,86.5Z"/>
+                            <path class="cls-2"
+                                  d="M228.79,131.9l-48.87-87.24c18.97-10.63,39.03-19.52,59.61-26.44l31.84,94.8c-14.69,4.94-29.02,11.29-42.58,18.88Z"/>
+                            <path class="cls-5"
+                                  d="M428.83,112.1c-14.75-4.76-30.04-8.16-45.47-10.1l12.51-99.21c21.59,2.72,43.01,7.48,63.67,14.15l-30.71,95.17Z"/>
+                            <path class="cls-14"
+                                  d="M277.71,110.98l-29.29-95.61c20.75-6.36,42.23-10.8,63.86-13.2l11.05,99.39c-15.46,1.72-30.81,4.89-45.62,9.43Z"/>
+                            <path class="cls-6"
+                                  d="M376.72,101.25c-15.4-1.53-31.3-1.64-46.75-.34L321.56,1.26c9.89-.84,19.97-1.26,29.94-1.26,11.71,0,23.52.58,35.11,1.74l-9.89,99.51Z"/>
+                        </g>
+                    </g>
+                </svg>
+                <!-- Элемент для отображения значения pH -->
+                <div class="ph-value-display" id="phValueDisplay">...</div>
+            </div>
+        </div>
+    </div>
+    <!-- === pH Gauge Integration END === -->
+
+    <div class="grid-item item10">
+        <div class="title">Substrate Moisture</div>
+        <div class="content chart-container">
+            <canvas id="substrateMoistureChart"></canvas>
+        </div>
+    </div>
+    <div class="grid-item item11">
+        <div class="title">Humidity</div>
+        <div class="content chart-container">
+            <canvas id="humidityChart"></canvas>
+        </div>
+    </div>
+    <div class="grid-item item12">
+        <div class="title">Temperature</div>
+        <div class="content chart-container">
+            <canvas id="temperatureChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Ряд 4 (контейнер для 13, 14, 15) -->
+    <div class="bottom-row-container">
+        <div class="grid-item">
+            <div class="title">EC and TDS Sensors</div>
+            <div class="content chart-container">
+                <canvas id="flowLevelChart"></canvas>
+            </div>
+        </div>
+        <div class="grid-item">
+            <div class="title">CO2 level</div>
+            <div class="content chart-container">
+                <canvas id="airQualityChart"></canvas>
+            </div>
+        </div>
+        <div class="grid-item">
+            <div class="title">Water Quality</div>
+            <div class="content chart-container">
+                <canvas id="waterQualityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="app-footer">
+    <div class="last-updated" id="lastUpdated">Last Updated: </div>
+</footer>
+ <!--  Chatbot Popup -->
+    <div id="chatPopup" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 350px; /* Немного шире */
+        height: 500px; /* Ограничим высоту */
+        max-height: 80vh;
+        background-color: #0d0d0d;
+        color: white;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        display: none; /* Изначально скрыт */
+        flex-direction: column;
+        overflow: hidden;
+        font-family: 'Segoe UI', sans-serif;
+        z-index: 9999;
+    ">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1a1a1a;">
+            <h3 style="margin: 0;">AIBot</h3>
+            <button onclick="document.getElementById('chatPopup').style.display='none'" style="
+                background: none; border: none; color: white; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+
+        <div id="chatbox" style="
+            flex: 1;
+            padding: 10px 20px;
+            overflow-y: auto;
+            border-bottom: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Промежутки между сообщениями */
+        ">
+            <!-- Начальное приветствие -->
+            <p><b>AIBot:</b> Чем я могу вам помочь сегодня?</p>
+        </div>
+
+        <div style="padding: 15px 20px; display: flex; gap: 10px; align-items: flex-end;">
+    <!-- ЗАМЕНЯЕМ INPUT НА TEXTAREA -->
+    <textarea id="chatInput" placeholder="Введите сообщение..." rows="1" style="
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 8px;
+        background-color: #1e1e1e;
+        color: white;
+        resize: none; /* Запрещаем пользователю менять размер вручную */
+        overflow-y: hidden; /* Скрываем вертикальный скроллбар */
+        font-family: inherit; /* Наследуем шрифт */
+        font-size: 1em; /* Наследуем размер шрифта */
+        line-height: 1.4; /* Межстрочный интервал для комфорта */
+    "></textarea>
+
+    <button onclick="sendMessage()" style="
+        padding: 10px 20px;
+        background-color: #10a37f;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        height: 42px; /* Фиксируем высоту кнопки */
+    ">Send</button>
+</div>
+
+    </div>
+<script>
+    let substrateMoistureChart;
+    let datesPopulated = false;
+    let dataUpdateIntervalId = null; // <--- ДОБАВЛЕНО: для хранения ID интервала
+let currentDisplayMode = 'now'; // <--- ДОБАВЛЕНО: 'now' или 'history'
+    // === Chart.js Config and Initialization ===
+    const chartColor = '#287E8F';
+    const gridColor = 'rgba(255, 255, 255, 0.1)';
+    const labelColor = '#AAAAAA';
+
+    const defaultChartOptions = { /* ... Chart.js options ... */
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {display: false},
+            tooltip: {backgroundColor: 'rgba(0, 0, 0, 0.7)', titleColor: '#FFFFFF', bodyColor: '#FFFFFF',}
+        },
+        scales: {
+            x: {
+                ticks: {color: labelColor, maxRotation: 0, autoSkip: true, maxTicksLimit: 7},
+                grid: {color: gridColor, display: false}
+            }, y: {ticks: {color: labelColor}, grid: {color: gridColor}, beginAtZero: false}
+        }
+    };
+
+    // --- Chart.js Instances (Substrate, Humidity, etc.) ---
+    const ctxSubstrate = document.getElementById('substrateMoistureChart').getContext('2d');
+    // new Chart(ctxSubstrate, { type: 'bar', data: { labels: ['Shelf 1', 'Shelf 2', 'Shelf 3', 'Shelf 4', 'Shelf 5'], datasets: [{ label: 'Moisture %', data: [65, 59, 80, 81, 56], backgroundColor: chartColor, borderColor: chartColor, borderWidth: 1, borderRadius: 4, barPercentage: 0.6, categoryPercentage: 0.7 }] }, options: { ...defaultChartOptions } });
+    const ctxHumidity = document.getElementById('humidityChart').getContext('2d');
+    humisityChartupdater = new Chart(ctxHumidity, {
+        type: 'line',
+        data: {
+            labels: ['12', '13', '14', '15', '16', '17'],
+            datasets: [{
+                label: 'Humidity %',
+                data: [45, 48, 52, 55, 53, 58],
+                borderColor: chartColor,
+                backgroundColor: 'rgba(40, 126, 143, 0.1)',
+                tension: 0.5,
+                fill: true,
+                pointBackgroundColor: chartColor,
+                pointBorderColor: '#fff',
+                pointHoverRadius: 6,
+                pointRadius: 3,
+            },
+            {
+        label: 'Prediction Humidity',
+        data: ['18', '19', '20'],         // сюда — data.temperature_data_prediction
+        borderColor: 'rgb(255,195,0)',
+        backgroundColor: 'rgb(198,150,0)',
+        tension: 1,
+                showLine: true,
+        pointRadius: 3,
+      }]
+        },
+        options: {
+            ...defaultChartOptions,
+            scales: {
+                x: {...defaultChartOptions.scales.x},
+                y: {...defaultChartOptions.scales.y, beginAtZero: false, grace: '80%',
+                    title: {
+          display: true,
+          text: '%',       // вот этот '%' будет один раз сбоку
+          align: 'center',
+          padding: { top: 0, bottom: 10 }
+        }
+}
+            }
+        }
+    });
+
+
+    
+    const ctxTemperature = document.getElementById('temperatureChart').getContext('2d');
+    temperatureChartupdater = new Chart(ctxTemperature, {
+        type: 'line',
+        data: {
+            labels: ['12', '13', '14', '15', '16', '17'],
+            datasets: [{
+                label: 'Temperature °C',
+                data: [22, 23, 24, 24.5, 24, 25],
+                borderColor: chartColor,
+                backgroundColor: 'rgba(40, 126, 143, 0.1)',
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: chartColor,
+                pointBorderColor: '#fff',
+                pointHoverRadius: 6,
+                pointRadius: 3,
+            },
+            {
+        label: 'Prediction Temprerature',
+        data: ['18', '19', '20'],
+        borderColor: 'rgb(255,195,0)',
+        backgroundColor: 'rgb(198,150,0)',
+        tension: 0.3,
+                showLine: true,
+        pointRadius: 3,
+      }]
+        },
+        options: {
+
+            ...defaultChartOptions,
+            scales: {
+                x: {...defaultChartOptions.scales.x},
+                y: {...defaultChartOptions.scales.y, grace: '5%', beginAtZero: false, }
+            }
+        }
+    });
+
+
+    const ctxFlowLevel = document.getElementById('flowLevelChart').getContext('2d');
+    ectcsChartUpdater = new Chart(ctxFlowLevel, {
+        type: 'line',
+        data: {
+            labels: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'],
+            datasets: [{
+                label: 'EC',
+                data: [50, 80, 60, 90, 70],
+                borderColor: chartColor,
+                backgroundColor: 'rgba(40, 126, 143, 0.5)',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'TDS',
+                data: [30, 50, 40, 60, 55],
+                borderColor: '#34aadc',
+                backgroundColor: 'rgba(52, 170, 220, 0.3)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            ...defaultChartOptions,
+            plugins: {
+                legend: {display: true, labels: {color: labelColor}},
+                tooltip: {...defaultChartOptions.plugins.tooltip}
+            },
+            scales: {x: {...defaultChartOptions.scales.x}, y: {...defaultChartOptions.scales.y, suggestedMax: 200}}
+        }
+    });
+
+
+    const ctxAirQuality = document.getElementById('airQualityChart').getContext('2d');
+    co2Chartupdater = new Chart(ctxAirQuality, {
+        type: 'line',
+        data: {
+            labels: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'],
+            datasets: [{
+                label: 'AQI',
+                data: [20, 25, 22, 30, 35],
+                borderColor: chartColor,
+                backgroundColor: 'rgba(40, 126, 143, 0.1)',
+                tension: 0.5,
+                fill: false,
+                pointBackgroundColor: chartColor,
+                pointBorderColor: '#fff',
+                pointHoverRadius: 6,
+                pointRadius: 4,
+            }]
+        },
+        options: {
+            ...defaultChartOptions,
+            scales: {x: {...defaultChartOptions.scales.x}, y: {...defaultChartOptions.scales.y, suggestedMax: 50,
+                title: {
+          display: true,
+          text: 'ppm',
+          align: 'center',
+          padding: { top: 0, bottom: 10 }
+        }}}
+        }
+    });
+    const ctxWaterQuality = document.getElementById('waterQualityChart').getContext('2d');
+    waterChartupdater = new Chart(ctxWaterQuality, {
+        type: 'line',
+        data: {
+            labels: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'],
+            datasets: [{
+                label: 'Turbidity',
+                data: [15, 20, 18, 28, 32],
+                borderColor: chartColor,
+                backgroundColor: 'rgba(40, 126, 143, 0.1)',
+                tension: 0.3,
+                fill: false,
+                pointBackgroundColor: chartColor,
+                pointBorderColor: '#fff',
+                pointHoverRadius: 6,
+                pointRadius: 4,
+            }]
+        },
+        options: {
+            ...defaultChartOptions,
+            scales: {x: {...defaultChartOptions.scales.x}, y: {...defaultChartOptions.scales.y, suggestedMax: 50}}
+        }
+    });
+
+    substrateMoistureChart = new Chart(ctxSubstrate, {
+        type: 'bar',
+        data: {
+            labels: ['Shelf 1', 'Shelf 2', 'Shelf 3', 'Shelf 4', 'Shelf 5'], // Static labels
+            datasets: [{
+                label: 'Moisture %',
+                data: [80, 70, 90, 75, 85], // Initial empty data
+                backgroundColor: chartColor,
+                borderColor: chartColor,
+                borderWidth: 1,
+                borderRadius: 4,
+                barPercentage: 0.6,
+                categoryPercentage: 0.7
+            }]
+        },
+        options: {...defaultChartOptions,}
+    });
+    // === pH Gauge JavaScript (Copied & Adapted) ===
+    const phValueDisplayElement = document.getElementById('phValueDisplay'); // Renamed variable for clarity
+
+    // Массив цветов для каждого целочисленного значения pH
+    const phColors = [
+        '#e51920', '#f67716', '#ebbd11', '#e8de01', '#adcb30', '#7fb93c',
+        '#49af43', '#32a440', '#21ad6a', '#06b2ad', '#438ac5', '#354f99',
+        '#544c98', '#5e4393', '#3e2b7a'
+    ];
+
+function startRealtimeUpdates() {
+    if (dataUpdateIntervalId) {
+        clearInterval(dataUpdateIntervalId); // Очищаем предыдущий интервал, если есть
+    }
+    console.log("Starting real-time updates...");
+    updateData(); // Первоначальный вызов
+    dataUpdateIntervalId = setInterval(updateData, 5000);
+    currentDisplayMode = 'now';
+    // Убедимся, что 'Now' выбрано в селекте, если мы принудительно запускаем real-time
+    const dateSelectElement = document.getElementById('dateSelect');
+    if (dateSelectElement) {
+        dateSelectElement.value = 'now';
+    }
+}
+
+function stopRealtimeUpdates() {
+    if (dataUpdateIntervalId) {
+        clearInterval(dataUpdateIntervalId);
+        dataUpdateIntervalId = null;
+        console.log("Stopped real-time updates.");
+    }
+    currentDisplayMode = 'history';
+}
+    /**
+     * Функция для установки и отображения значения pH.
+     * @param {number} phValue - Новое значение pH (от 0 до 14).
+     */
+    function setPhValueAndDisplay(phValue) {
+        if (typeof phValue !== 'number' || isNaN(phValue) || !phValueDisplayElement) {
+            if (phValueDisplayElement) {
+                phValueDisplayElement.textContent = "N/A";
+                phValueDisplayElement.style.color = "#FF0000";
+            }
+            console.error("setPhValueAndDisplay: Invalid pH value or display element not found.");
+            return;
+        }
+
+        const clampedValue = Math.max(0, Math.min(14, phValue));
+        const roundedValue = Math.round(clampedValue);
+
+        phValueDisplayElement.textContent = `${clampedValue.toFixed(1)} pH`;
+
+        if (roundedValue >= 0 && roundedValue < phColors.length) {
+            phValueDisplayElement.style.color = phColors[roundedValue];
+        } else {
+            phValueDisplayElement.style.color = phColors[7]; // Default to neutral color
+        }
+    }
+
+    // Устанавливаем начальное значение pH
+    // setPhValueAndDisplay(5); // Set initial value for the gauge
+
+    // --- Optional: Example of updating pH value dynamically ---
+    // setTimeout(() => { setPhValueAndDisplay(3.5); }, 3000);
+    // setTimeout(() => { setPhValueAndDisplay(11.2); }, 6000);
+
+    const gaugeFill = document.getElementById('gauge-fill');
+    const gaugeValueText = document.getElementById('gauge-value');
+    const lightValueText = document.getElementById('light-value');
+    const weatherValueText = document.getElementById('weather-status');
+
+    // Диапазон температур для шкалы (0% - 100% шкалы)
+    const MIN_TEMP = 0;
+    const MAX_TEMP = 35; // Условный максимум для расчета процента заполнения и градиента
+
+    // Ключевые точки температуры и соответствующие им цвета (RGB)
+    const colorStops = [
+        {temp: 15, rgb: [0, 123, 255]},    // Синий (#007bff) при 15°C и ниже
+        {temp: 24, rgb: [50, 164, 64]},   // Бирюзовый (#2A9D8F) при 24°C
+        {temp: 26, rgb: [50, 164, 64]},   // Бирюзовый (#2A9D8F) при 26°C
+        {temp: 35, rgb: [229, 25, 32]}     // Красный (#dc3545) при 35°C и выше (можно настроить эту точку)
+        // Добавил точку 35 для красного, чтобы переход не был слишком резким после 26.
+        // Все что выше 35 будет красным.
+    ];
+
+    // Функция для линейной интерполяции между двумя значениями
+    function lerp(start, end, factor) {
+        return start + (end - start) * factor;
+    }
+
+    // Функция для интерполяции между двумя RGB цветами
+    function interpolateColor(rgb1, rgb2, factor) {
+        const r = Math.round(lerp(rgb1[0], rgb2[0], factor));
+        const g = Math.round(lerp(rgb1[1], rgb2[1], factor));
+        const b = Math.round(lerp(rgb1[2], rgb2[2], factor));
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    // Функция для получения цвета на основе температуры
+    function getGradientColor(temp) {
+        // Найти два ближайших цветовых стопа, между которыми находится температура
+        let startStop = colorStops[0];
+        let endStop = colorStops[0]; // По умолчанию - первый цвет, если ниже всех
+
+        for (let i = 0; i < colorStops.length; i++) {
+            if (temp >= colorStops[i].temp) {
+                startStop = colorStops[i];
+                // Если это не последний стоп, берем следующий как конечный
+                if (i < colorStops.length - 1) {
+                    endStop = colorStops[i + 1];
+                } else {
+                    // Если температура выше или равна последнему стопу, то цвет конечный
+                    endStop = colorStops[i];
+                }
+            } else {
+                // Если температура меньше текущего стопа, значит мы нашли нужный интервал
+                // (предыдущий был startStop, текущий будет endStop)
+                endStop = colorStops[i];
+                break; // Выходим из цикла
+            }
+        }
+
+        // Если начальный и конечный стопы одинаковые (температура ниже первого или выше последнего)
+        if (startStop.temp === endStop.temp) {
+            return `rgb(${startStop.rgb[0]}, ${startStop.rgb[1]}, ${startStop.rgb[2]})`;
+        }
+
+        // Рассчитать фактор интерполяции (0.0 до 1.0)
+        const range = endStop.temp - startStop.temp;
+        const factor = (temp - startStop.temp) / range;
+
+        // Интерполировать цвет
+        return interpolateColor(startStop.rgb, endStop.rgb, Math.max(0, Math.min(1, factor))); // Ограничиваем 0-1
+    }
+
+
+    function setTemperature(temp) {
+        const clampedTemp = Math.max(MIN_TEMP, Math.min(MAX_TEMP, temp));
+        const fillPercentage = (clampedTemp - MIN_TEMP) / (MAX_TEMP - MIN_TEMP);
+        const rotation = fillPercentage * 0.5;
+
+        // Получаем цвет с использованием новой градиентной логики
+        const fillColor = getGradientColor(temp); // Используем исходную температуру для цвета
+
+        // Обновляем стили
+        gaugeFill.style.transform = `rotate(${rotation}turn)`;
+        gaugeFill.style.backgroundColor = fillColor;
+        gaugeValueText.textContent = `${Math.round(temp)}°C`;
+    }
+
+    // // --- Установи здесь нужную температуру ---
+    const currentTemperature = 25; // Попробуй разные значения: 10, 18, 24, 25, 28, 40
+    // // ----------------------------------------
+    //
+    setTemperature(currentTemperature);
+
+
+    // === Video Switching Logic ===
+    const cameraSelect = document.getElementById('cameraSelect');
+    const videoElement = document.getElementById('cameraVideo');
+
+    // Map dropdown values to video file names
+    const videoSources = {
+        'cam1': "{{ url_for('static', filename='video1.MOV') }}",
+        'cam2': "{{ url_for('static', filename='video2.MOV') }}"
+        // Add more mappings if needed: 'cam3': 'video3.mp4', etc.
+    };
+
+    if (cameraSelect && videoElement) {
+        cameraSelect.addEventListener('change', function () {
+            const selectedCamera = this.value; // e.g., 'cam1' or 'cam2'
+            const newSrc = videoSources[selectedCamera];
+
+            if (newSrc) {
+                console.log(`Switching camera view to: ${newSrc}`); // Debug log
+                videoElement.src = newSrc; // Change the source
+                videoElement.load(); // Load the new source
+                // Attempt to play, catch errors if autoplay is blocked
+                videoElement.play().catch(error => {
+                    console.error("Video play() failed:", error);
+                    // Optional: Show a play button or message if autoplay fails
+                });
+            } else {
+                console.warn(`No video source defined for camera option: ${selectedCamera}`);
+            }
+        });
+    } else {
+        console.error("Could not find camera select dropdown or video element.");
+    }
+
+    // Initial play attempt in case browser needs it after load (belt-and-suspenders)
+    // Muted autoplay is generally reliable, but this doesn't hurt.
+    if (videoElement) {
+        videoElement.play().catch(error => {
+            console.log("Initial video play() attempt info:", error); // Log non-critical initial play errors
+        });
+    }
+
+
+    function updateData(dateString = null) { // Добавляем опциональный параметр dateString
+    let fetchUrl = '/data'; // URL по умолчанию для "Now"
+    let isHistoricalData = false;
+
+    if (dateString && dateString !== 'now') {
+        fetchUrl = `http://10.1.10.144:5000/data_by_date?date=${dateString}`;
+        isHistoricalData = true;
+        console.log(`Fetching historical data for: ${dateString}`);
+    } else {
+        console.log("Fetching real-time data (Now)");
+    }
+
+        fetch(fetchUrl)
+
+            .then(response => response.json())
+        .then(data => {
+             // --- НАЧАЛО ИЗМЕНЕНИЙ ДЛЯ СПИСКА ДАТ ---
+            const dateSelectElement = document.getElementById('dateSelect');
+            if (dateSelectElement && !datesPopulated) { // Заполняем только один раз
+                dateSelectElement.innerHTML = ''; // Очищаем предыдущие опции
+
+                // Добавляем опцию "Now" первой
+                const nowOption = document.createElement('option');
+                nowOption.value = 'now';
+                nowOption.textContent = 'Now';
+                dateSelectElement.appendChild(nowOption);
+
+                if (data.history_data && Array.isArray(data.history_data)) { // Убедимся, что history_data существует и является массивом
+                    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+                    data.history_data.forEach(histDateString => {
+                        const dateParts = histDateString.split('-');
+                        const year = parseInt(dateParts[0]);
+                        const monthIndex = parseInt(dateParts[1]) - 1;
+                        const day = parseInt(dateParts[2]);
+                        const dateObj = new Date(year, monthIndex, day);
+                        const displayDay = dateObj.getDate();
+                        const displayMonth = monthNames[dateObj.getMonth()];
+                        const displayYear = dateObj.getFullYear();
+                        const formattedDate = `${displayDay}-${displayMonth}-${displayYear}`;
+                        const option = document.createElement('option');
+                        option.value = histDateString;
+                        option.textContent = formattedDate;
+                        dateSelectElement.appendChild(option);
+                    });
+                }
+                datesPopulated = true; // Устанавливаем флаг, что даты загружены
+
+                // Устанавливаем "Now" по умолчанию выбранным
+                dateSelectElement.value = 'now';
+
+                // Добавляем слушатель событий на изменение выбора даты
+                dateSelectElement.addEventListener('change', function() {
+                    const selectedValue = this.value;
+                    if (selectedValue === 'now') {
+                        currentDisplayMode = 'now';
+                        startRealtimeUpdates(); // Запускаем автообновление
+                    } else {
+                        currentDisplayMode = 'history';
+                        stopRealtimeUpdates(); // Останавливаем автообновление
+                        updateData(selectedValue); // Загружаем данные для выбранной даты
+                    }
+                });
+            }
+
+                setTemperature(data.air_temperature.toFixed(1));
+            lightValueText.textContent = `${Math.round(data.light_level)}\nlm`;
+            if (substrateMoistureChart && data.soil1 !== undefined) {
+                substrateMoistureChart.data.datasets[0].data = [
+                    data.soil1, data.soil2, data.soil3, data.soil4, data.soil5
+                ];
+                substrateMoistureChart.update();
+            }
+            // Исправлено отображение погоды
+            weatherValueText.textContent = data.weather_temp !== null ? `${data.weather_temp}°C` : 'N/A';
+
+                if (temperatureChartupdater) { // Убрал data.temperature_data из условия, проверим ниже
+                    temperatureChartupdater.data.labels = [];
+                    temperatureChartupdater.data.datasets.forEach(ds => ds.data = []);
+
+                    if (data.temperature_data && Array.isArray(data.temperature_data)) {
+                        data.temperature_data.forEach(point => {
+                            const time = new Date(point.timestamp)
+                                .toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                            temperatureChartupdater.data.labels.push(time);
+                            temperatureChartupdater.data.datasets[0].data.push(point.air_temperature);
+                            if (temperatureChartupdater.data.datasets[1]) {
+                               temperatureChartupdater.data.datasets[1].data.push(null);
+                            }
+                        });
+                    }
+
+                    // ИСПРАВЛЕНИЕ ЗДЕСЬ: Проверка на null и Array.isArray
+                    if (data.temperature_data_prediction && Array.isArray(data.temperature_data_prediction)) {
+                        data.temperature_data_prediction.forEach(point => {
+                            const time = new Date(point.timestamp)
+                                .toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                            temperatureChartupdater.data.labels.push(time);
+                            temperatureChartupdater.data.datasets[0].data.push(null);
+                            temperatureChartupdater.data.datasets[1].data.push(point.forecast_temperature);
+                        });
+                    }
+                    temperatureChartupdater.update();
+                } else { // Этот блок вызывается, если temperatureChartupdater еще не создан
+                    const ctx = document.getElementById('temperatureChart').getContext('2d');
+                    temperatureChartupdater = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: (data.temperature_data && Array.isArray(data.temperature_data)) ? data.temperature_data.map(point => {
+                                const date = new Date(point.timestamp);
+                                return date.toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                });
+                            }) : [],
+                            datasets: [{
+                                label: 'Real Temperature',
+                                data: (data.temperature_data && Array.isArray(data.temperature_data)) ? data.temperature_data.map(point => point.air_temperature) : [],
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1,
+                                fill: false
+                            },
+                            {
+                                label: 'Prediction Temperature',
+                                data: (data.temperature_data_prediction && Array.isArray(data.temperature_data_prediction)) ? data.temperature_data_prediction.map(p => p.forecast_temperature) : [], // Добавлено начальное заполнение, если есть
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderDash: [5, 5],
+                                tension: 0.3,
+                                showLine: true,
+                                pointRadius: 3,
+                            }]
+                        },
+                        options: { /* ... ваши опции ... */ }
+                    });
+                }
+
+                if (humisityChartupdater) { // Убрал data.humidity_data из условия, проверим ниже
+                    humisityChartupdater.data.labels = [];
+                    humisityChartupdater.data.datasets.forEach(ds => ds.data = []);
+
+                    if (data.humidity_data && Array.isArray(data.humidity_data)) {
+                        data.humidity_data.forEach(point => {
+                            const time = new Date(point.timestamp)
+                                .toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                            humisityChartupdater.data.labels.push(time);
+                            humisityChartupdater.data.datasets[0].data.push(point.air_humidity);
+                            if (humisityChartupdater.data.datasets[1]) {
+                                humisityChartupdater.data.datasets[1].data.push(null);
+                            }
+                        });
+                    }
+
+                    // ИСПРАВЛЕНИЕ ЗДЕСЬ: Проверка на null и Array.isArray
+                    if (data.humidity_data_prediction && Array.isArray(data.humidity_data_prediction)) {
+                        data.humidity_data_prediction.forEach(point => {
+                            const time = new Date(point.timestamp)
+                                .toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                            humisityChartupdater.data.labels.push(time);
+                            humisityChartupdater.data.datasets[0].data.push(null);
+                            humisityChartupdater.data.datasets[1].data.push(point.forecast_humidity);
+                        });
+                    }
+                    humisityChartupdater.update();
+                } else { // Этот блок вызывается, если humisityChartupdater еще не создан
+                    const ctx = document.getElementById('humidityChart').getContext('2d');
+                    humisityChartupdater = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: (data.humidity_data && Array.isArray(data.humidity_data)) ? data.humidity_data.map(point => {
+                                const date = new Date(point.timestamp);
+                                return date.toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                });
+                            }) : [],
+                            datasets: [{ // Обратите внимание, что оригинальный код инициализации создавал 2 датасета. Этот блок else создавал только 1.
+                                label: 'Humidity', // или 'Humidity %' как в глобальной инициализации
+                                data: (data.humidity_data && Array.isArray(data.humidity_data)) ? data.humidity_data.map(point => point.air_humidity) : [],
+                                borderColor: chartColor, // Используйте chartColor или 'rgba(75, 192, 192, 1)'
+                                tension: 0.5, // из глобальной инициализации
+                                fill: true, // из глобальной инициализации
+                                // ... другие свойства из глобальной инициализации dataset[0]
+                            },
+                            {
+                                label: 'Prediction Humidity', // из глобальной инициализации
+                                data: (data.humidity_data_prediction && Array.isArray(data.humidity_data_prediction)) ? data.humidity_data_prediction.map(p => p.forecast_humidity) : [], // Добавлено начальное заполнение
+                                borderColor: 'rgb(255,195,0)', // из глобальной инициализации
+                                // ... другие свойства из глобальной инициализации dataset[1]
+                            }]
+                        },
+                        options: { /* ... ваши опции, желательно идентичные глобальной инициализации ... */ }
+                    });
+                }
+
+                if (co2Chartupdater) {
+                    co2Chartupdater.data.labels = [];
+                    if (co2Chartupdater.data.datasets && co2Chartupdater.data.datasets.length > 0) {
+                        co2Chartupdater.data.datasets[0].data = [];
+                    }
+
+                    if (data.co2_data && Array.isArray(data.co2_data)) { // Добавлена проверка Array.isArray
+                        data.co2_data.forEach(point => {
+                            const time = new Date(point.timestamp)
+                                .toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                            co2Chartupdater.data.labels.push(time);
+                            co2Chartupdater.data.datasets[0].data.push(point.co2);
+                        });
+                    }
+                    co2Chartupdater.update();
+                }
+
+                if (ectcsChartUpdater) {
+                    ectcsChartUpdater.data.labels = [];
+                    if (ectcsChartUpdater.data.datasets && ectcsChartUpdater.data.datasets.length >= 2) {
+                        ectcsChartUpdater.data.datasets[0].data = [];
+                        ectcsChartUpdater.data.datasets[1].data = [];
+                    } else {
+                        console.error("Ошибка: Датасеты для графика EC/TDS не найдены или их меньше двух!");
+                        // return; // Можно раскомментировать, если это критично
+                    }
+
+                    if (data.ec_data && Array.isArray(data.ec_data)) { // Добавлена проверка Array.isArray
+                        data.ec_data.forEach((ec_point, index) => {
+                            const time = new Date(ec_point.timestamp)
+                                .toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                            ectcsChartUpdater.data.labels.push(time);
+
+                            if (typeof ec_point.ec !== 'undefined') {
+                                ectcsChartUpdater.data.datasets[0].data.push(ec_point.ec);
+                            } else {
+                                ectcsChartUpdater.data.datasets[0].data.push(null);
+                                console.warn(`Отсутствует значение 'ec' в ec_data по индексу ${index}`);
+                            }
+
+                            // Добавлена проверка Array.isArray для data.tds_data
+                            if (data.tds_data && Array.isArray(data.tds_data) && data.tds_data[index] && typeof data.tds_data[index].tds !== 'undefined') {
+                                ectcsChartUpdater.data.datasets[1].data.push(data.tds_data[index].tds);
+                            } else {
+                                ectcsChartUpdater.data.datasets[1].data.push(null);
+                                if (index === 0) { // Логируем предупреждение только один раз
+                                    if (!data.tds_data || !Array.isArray(data.tds_data)) {
+                                        console.warn("Массив tds_data отсутствует или не является массивом. Данные TDS не будут отображены.");
+                                    } else if (data.tds_data.length !== data.ec_data.length) {
+                                        console.warn("Массивы ec_data и tds_data имеют разную длину. Данные TDS могут отображаться некорректно.");
+                                    } else if (data.tds_data[index] && typeof data.tds_data[index].tds === 'undefined') {
+                                        console.warn(`Отсутствует значение 'tds' в tds_data по индексу ${index} (и возможно в других).`);
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        console.log("Нет данных (ec_data пуст или не массив) для обновления графика EC/TDS.");
+                    }
+                    ectcsChartUpdater.update();
+                }
+
+//
+//                 if (waterChartupdater) {
+//     waterChartupdater.data.labels = [];
+//     if (waterChartupdater.data.datasets && waterChartupdater.data.datasets.length > 0) {
+//         waterChartupdater.data.datasets[0].data = [];
+//     }
+//
+//     data.turbidity_data.forEach(point => {
+//         const time = new Date(point.timestamp)
+//             .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+//         waterChartupdater.data.labels.push(time);
+//         waterChartupdater.data.datasets[0].data.push(point.turbidity);
+//     });
+//
+//     waterChartupdater.update();
+// }
+
+
+            const lightIndicator = document.getElementById('lightIndicator');
+                    lightIndicator.src = data.light_level < 1
+                        ? "{{ url_for('static', filename='off.png') }}"
+                        : "{{ url_for('static', filename='on.png') }}";
+
+            setPhValueAndDisplay(data.ph_level);
+        })
+        .catch(error => console.error('Error fetching data:', error));
+
+    const lastUpdated = document.getElementById('lastUpdated');
+    const now = new Date();
+    lastUpdated.innerText = 'Last Updated: ' + now.toLocaleString();
+    }
+
+    updateData();
+    // setInterval(updateData, 5000);
+</script>
+<div class="invisible-big-button"></div>
+<style>
+  .invisible-big-button {
+    position: fixed;
+    left: 0;
+    bottom: 10px;
+    width: 100px;
+    height: 100px;
+    z-index: 99999999;
+  }
+</style>
+<script>
+  document.querySelector('.invisible-big-button').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+            document.querySelector('.invisible-big-button').remove();
+        });
+    }
+  });
+</script>
+<script>
+  // в самом верху script.js, после DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  const burger   = document.querySelector('.burger-btn');
+  const sideMenu = document.getElementById('sideMenu');
+  const closeBtn = document.getElementById('closeMenu');
+
+  if (burger && sideMenu && closeBtn) {
+    // открываем меню
+    burger.addEventListener('click', () => {
+      sideMenu.classList.add('open');
+    });
+    // закрываем меню
+    closeBtn.addEventListener('click', () => {
+      sideMenu.classList.remove('open');
+    });
+    // закрыем по клику вне меню (опционально)
+    sideMenu.addEventListener('click', e => {
+      if (e.target === sideMenu) {
+        sideMenu.classList.remove('open');
+      }
+    });
+  }
+   const links = document.querySelectorAll('.side-nav a');
+  links.forEach(link => {
+    // сравниваем href без query-строки
+    const url = new URL(link.href);
+    if (url.pathname === window.location.pathname) {
+      link.classList.add('active');
+    }
+  });
+  startRealtimeUpdates();
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journal Form</title>
+ <script src="{{ url_for('static', filename='auth.js') }}"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: monospace;
+      background-color: #121212;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      background-color: #121212;
+      padding: 10px;
+      box-sizing: border-box;
+      justify-content: space-between;
+    }
+
+    .burger-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 20px;
+      width: 25px;
+      padding: 0;
+    }
+
+    .burger-btn span {
+      display: block;
+      height: 3px;
+      background: white;
+      border-radius: 2px;
+      width: 100%;
+    }
+
+    h1 {
+      font-weight: lighter;
+      margin-block-start: 0;
+      margin-block-end: 0.22em;
+    }
+
+    
+    .user-bar {
+        display: flex;
+        align-items: center;
+        gap: 2rem; 
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: monospace;
+        color: #aaa;
+    }
+
+    .user-info svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .page-title {
+      text-align: center;
+      font-size: 24px;
+      margin-top: 60px;
+      margin-bottom: 15px;
+    }
+
+    .form-container {
+      background-color: #1e1e1e;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      width: 520px;
+      color: #aaa;
+    }
+
+    .form-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      flex-basis: 100px;
+      text-align: left;
+      margin-right: 30px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group .radio-group {
+      flex-grow: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      background-color: #121212;
+      color: #aaa;
+      font-family: monospace;
+      font-style: italic;
+      width: 100px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%; 
+    }
+
+
+    .form-group .radio-group {
+        display: flex;
+        gap: 25px;
+        padding: 0;
+        background: none;
+        justify-content: center;
+        width: auto; 
+    }
+
+
+    .form-group .radio-group label {
+      margin-right: 0;
+      flex: none;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      /* gap: 10px; */
+    }
+
+    .form-grid .form-group label {
+      flex-basis: 150px;
+    }
+
+    .radio-inline {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+    
+    .radio-inline label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .save-btn {
+      background-color: #2d8a99;
+      border: none;
+      padding: 15px 80px;
+      border-radius: 19px;
+      color: black;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 5px rgba(0,0,0,0.7);
+      margin: auto;
+      margin-top: 30px;
+    }
+
+    .save-btn:hover {
+      background-color: #246b77;
+    }
+
+    .type-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+    .type-btn {
+      background-color: #2d8a99;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: black;
+      font-family: monospace;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 5px rgba(0,0,0,0.7);
+      transition: background-color 0.2s;
+    }
+    .type-btn:hover {
+      background-color: #246b77;
+    }
+    .type-btn.active {
+      outline: 2px solid #fff;
+    }
+    /* Класс для скрытия секций формы */
+    .hidden {
+      display: none;
+    }
+
+    .form-group select {
+      flex-grow: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      background-color: #121212;
+      color: #aaa;
+      font-family: monospace;
+      font-style: italic;
+      width: 100%;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="user-bar">
+        <button class="burger-btn" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="user-info">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 24 24">
+            <path d="M12 2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5S14.76 2 12 2zm0 14c-4.33 0-8 2.17-8 4v2h16v-2c0-1.83-3.67-4-8-4z"/>
+          </svg>
+          <h3 id="user-name">User User</h3>
+        </div>
+      </div>      
+  </div>
+
+  <div class="page-title">
+    <h1>Journal Form</h1>
+  </div>
+
+  <div class="form-container">
+    <div class="type-btns">
+      <button type="button" id="btnExisting" class="type-btn active">Existing</button>
+      <button type="button" id="btnNew"      class="type-btn">New</button>
+    </div>
+
+
+    <div id="common-fields">
+
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="date">
+      </div>
+
+    </div>
+<!--      <div class="form-group">-->
+<!--        <label>Plant Name</label>-->
+<!--        <input type="text" id="plant">-->
+<!--      </div>-->
+
+
+
+
+
+      <div id="existing-section">
+        <div class="form-group">
+  <label>Plant Name</label>
+  <select id="plant-list"></select>
+</div>
+        <div class="form-group">
+      <label>Floor</label>
+        <div class="radio-inline">
+            <label><input type="radio" name="floor" value="1"> 1</label>
+            <label><input type="radio" name="floor" value="2"> 2</label>
+            <label><input type="radio" name="floor" value="3"> 3</label>
+            <label><input type="radio" name="floor" value="4"> 4</label>
+            <label><input type="radio" name="floor" value="5"> 5</label>
+        </div>
+      </div>
+        <div class="form-group">
+        <label>Growth Stage</label>
+        <input type="text" id="stage">
+      </div>
+
+        <div class="form-grid">
+
+        <div class="form-group">
+          <label>Height (cm)</label>
+          <input type="number" id="height">
+        </div>
+        <div class="form-group">
+          <label style="margin-left: 8px;">Leaf Color</label>
+          <input type="text" id="color">
+        </div>
+        <div class="form-group">
+          <label>Humidity (%)</label>
+          <input type="number" id="humidity">
+        </div>
+        <div class="form-group" >
+          <label style="margin-left: 8px;">Temperature (°C)</label>
+          <input type="number" id="temperature">
+        </div>
+      </div>
+    </div>
+
+       <div id="new-section" class="hidden">
+
+      <div class="form-group">
+        <label>Plant Name</label>
+        <input type="text" id="plant">
+      </div>
+<div class="form-group">
+      <label>Floor</label>
+        <div class="radio-inline">
+            <label><input type="radio" name="floor" value="1"> 1</label>
+            <label><input type="radio" name="floor" value="2"> 2</label>
+            <label><input type="radio" name="floor" value="3"> 3</label>
+            <label><input type="radio" name="floor" value="4"> 4</label>
+            <label><input type="radio" name="floor" value="5"> 5</label>
+        </div>
+      </div>
+    </div>
+
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="notes"></textarea>
+      </div>
+
+
+           </div>
+    <button class="save-btn" onclick="saveEntry()">Save</button>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // читаем из localStorage
+    const firstName = localStorage.getItem('firstName') || '';
+    const lastName  = localStorage.getItem('lastName')  || '';
+
+    const nameElem = document.getElementById('user-name');
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    // если есть хоть одно имя — показываем его, иначе оставляем дефолт
+    if (fullName) {
+      nameElem.textContent = fullName;
+    }
+  });
+</script>
+
+<script>
+async function loadPlantOptions() {
+    const select = document.getElementById('plant-list');
+    select.innerHTML = ''; // очистим перед загрузкой
+
+    try {
+      const res = await fetch('http://10.1.10.144:5000/api/plants');
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const plants = await res.json();
+
+      // Собираем map: group_id → name
+      const groupsMap = {};
+      plants.forEach(p => {
+        if (p.group_id != null && !(p.group_id in groupsMap)) {
+          groupsMap[p.group_id] = p.name;
+        }
+      });
+
+      // Рендерим опции
+      Object.entries(groupsMap).forEach(([id, name]) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+    } catch (e) {
+      console.error('Не удалось загрузить список растений:', e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadPlantOptions();
+  });
+
+   let entryType = 'existing';
+
+    document.getElementById('btnExisting').addEventListener('click', () => setType('existing'));
+    document.getElementById('btnNew')     .addEventListener('click', () => setType('new'));
+
+    async function setType(type) {
+      entryType = type;
+      document.getElementById('btnExisting').classList.toggle('active', type === 'existing');
+      document.getElementById('btnNew')     .classList.toggle('active', type === 'new');
+      document.getElementById('existing-section').classList.toggle('hidden', type !== 'existing');
+      document.getElementById('new-section')     .classList.toggle('hidden', type !== 'new');
+console.log('Type', entryType);
+await loadPlantOptions();
+
+    }
+
+  function formatRFC3339Nano(d) {
+    const pad2 = n => n.toString().padStart(2,'0');
+    const pad3 = n => n.toString().padStart(3,'0');
+    // наносекунды: дёргаем миллисекунды и домножаем на 1e6
+    const ms = d.getMilliseconds();
+    const ns9 = (ms * 1e6).toFixed(0).padStart(9,'0');
+
+    // часовое смещение в минутах (UTC−local)
+    const tzMin = -d.getTimezoneOffset();
+    const sign = tzMin >= 0 ? '+' : '-';
+    const absMin = Math.abs(tzMin);
+    const tzH = pad2(Math.floor(absMin/60));
+    const tzM = pad2(absMin % 60);
+
+    return [
+      d.getFullYear(),
+      pad2(d.getMonth()+1),
+      pad2(d.getDate())
+    ].join('-')
+      + 'T' + [
+        pad2(d.getHours()),
+        pad2(d.getMinutes()),
+        pad2(d.getSeconds())
+      ].join(':')
+      + '.' + ns9
+      + sign + tzH + ':' + tzM;
+  }
+
+  async function saveEntry() {
+    const rawDate = document.getElementById('date').value;
+    if (!rawDate) {
+      alert('Пожалуйста, выберите дату.');
+      return;
+    }
+    const d = new Date(rawDate + 'T00:00:00');
+    const seeding_date = formatRFC3339Nano(d);
+
+    const floorEl  = document.querySelector('input[name="floor"]:checked');
+
+    const stage    = document.getElementById('stage').value.trim();
+    const height   = document.getElementById('height').value;
+    const leaf_color    = document.getElementById('color').value.trim();
+    const humidity = document.getElementById('humidity').value;
+    const temperature     = document.getElementById('temperature').value;
+    const description    = document.getElementById('notes').value.trim();
+
+    let specificData = {};
+    if (entryType === 'existing') {
+      plant = document.getElementById('plant-list').value;
+      // const notes = document.getElementById('notes-existing').value.trim();
+      // if (!notes || !humidity || !temp) return alert('Заполните все поля в разделе Existing.');
+      specificData.name = plant;
+    } else {
+      plant = document.getElementById('plant').value.trim();
+      // const newField = document.getElementById('new-field').value.trim();
+      // if (!newField) return alert('Заполните все поля в разделе New.');
+      // specificData.newField = newField;
+      specificData.name = plant;
+    }
+
+    console.log(plant);
+
+      if (!floorEl) {
+        return alert('Пожалуйста, заполните все обязательные поля.');
+      }
+
+    // if (!floorEl || !plant || !stage || !height || !color) {
+    //   return alert('Пожалуйста, заполните все поля.');
+    // }
+
+    const token = localStorage.getItem('jwtToken');
+    if (!token) return window.location.replace('login.html');
+
+
+
+
+    const payload = {
+    seeding_date,
+    floor: floorEl.value,
+    name: plant,
+    description,
+  };
+
+
+  if (stage)           payload.growth_stage = stage;
+  if (height !== '')   payload.height      = Number(height);
+  if (leaf_color)           payload.leaf_color   = leaf_color;
+  if (humidity !== '') payload.humidity    = Number(humidity);
+  if (temperature !== '') payload.temperature = Number(temperature);
+
+    try {
+      const res = await fetch('http://10.1.10.144:5000/api/plants', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.status === 201) {
+        window.location.href = 'history';
+      } else if (res.status === 401) {
+        localStorage.removeItem('jwtToken');
+        window.location.replace('login.html');
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Ошибка при сохранении записи.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Сетевая ошибка. Попробуйте снова.');
+    }
+  }
+</script>
+
+
+</body>
+</html>

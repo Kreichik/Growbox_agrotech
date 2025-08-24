@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .data-item {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Latest Sensor Data</h1>
+    <div class="data-item">Timestamp: {{ data.timestamp }}</div>
+    <div class="data-item">Soil 1: {{ data.soil1 }}</div>
+    <div class="data-item">Soil 2: {{ data.soil2 }}</div>
+    <div class="data-item">Soil 3: {{ data.soil3 }}</div>
+    <div class="data-item">Soil 4: {{ data.soil4 }}</div>
+    <div class="data-item">Soil 5: {{ data.soil5 }}</div>
+    <div class="data-item">Water Temperature: {{ data.water_temperature }}</div>
+    <div class="data-item">Air Temperature: {{ data.air_temperature }}</div>
+    <div class="data-item">Air Humidity: {{ data.air_humidity }}</div>
+    <div class="data-item">Light Level: {{ data.light_level }}</div>
+
+    <script>
+        function updateData() {
+            fetch('/monitor-data')
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelector('.data-item:nth-child(2)').innerText = "Timestamp: " + data.timestamp;
+                    document.querySelector('.data-item:nth-child(3)').innerText = "Soil 1: " + data.soil1;
+                    document.querySelector('.data-item:nth-child(4)').innerText = "Soil 2: " + data.soil2;
+                    document.querySelector('.data-item:nth-child(5)').innerText = "Soil 3: " + data.soil3;
+                    document.querySelector('.data-item:nth-child(6)').innerText = "Soil 4: " + data.soil4;
+                    document.querySelector('.data-item:nth-child(7)').innerText = "Soil 5: " + data.soil5;
+                    document.querySelector('.data-item:nth-child(8)').innerText = "Water Temperature: " + data.water_temperature;
+                    document.querySelector('.data-item:nth-child(9)').innerText = "Air Temperature: " + data.air_temperature;
+                    document.querySelector('.data-item:nth-child(10)').innerText = "Air Humidity: " + data.air_humidity;
+                    document.querySelector('.data-item:nth-child(11)').innerText = "Light Level: " + data.light_level;
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // Initial data fetch and setup interval for updates
+        updateData();
+        setInterval(updateData, 5000); // Update every 5 seconds
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Journal Form History</title>
+  <link rel="stylesheet" href="../static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="user-bar">
+        <button class="burger-btn" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="user-info">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 24 24">
+            <path d="M12 2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5S14.76 2 12 2zm0 14c-4.33 0-8 2.17-8 4v2h16v-2c0-1.83-3.67-4-8-4z"/>
+          </svg>
+          <h3>User User</h3>
+        </div>
+      </div>      
+      <h1>Journal Form History</h1>
+    </header>
+
+    <main>
+      <div class="header-row">
+        <div class="tabs">
+          <button id="tableBtn" class="active">Table</button>
+          <button id="analyticsBtn">Analytics</button>
+        </div>
+      
+        <!-- Filters for Analytics -->
+        <div id="analyticsFilters" style="display: none;" class="filter-group">
+          <select id="filter-date"><option value="">All Dates</option></select>
+          <select id="filter-floor"><option value="">All Floors</option></select>
+          <select id="filter-plant"><option value="">All Plants</option></select>
+        </div>
+      
+        <!-- Search for Table -->
+        <div id="searchContainer">
+          <input type="text" id="searchInput" placeholder="Search ..." />
+          <button id="searchBtn" class="search-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+        </div>        
+      </div>      
+      
+        <section id="tableSection">
+          <table id="dataTable">
+            <thead>
+              <tr>
+                <th data-key="timestamp" data-type="string">Timestamp</th>
+                <th data-key="date" data-type="string">Date</th>
+                <th data-key="floor" data-type="number">Floor</th>
+                <th data-key="plant" data-type="string">Plant Name</th>
+                <th data-key="stage" data-type="string">Growth Stage</th>
+                <th data-key="height" data-type="number">Height</th>
+                <th data-key="leafColor" data-type="string">Leaf Color</th>
+                <th data-key="humidity" data-type="number">Humidity</th>
+                <th data-key="temperature" data-type="number">Temperature</th>
+                <th data-key="notes" data-type="string">Notes</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div class="pagination" id="pagination"></div>
+        </section>
+      
+        <section id="analyticsSection" style="display: none;">
+        
+          <div class="analytics-grid">
+            <div class="chart"><canvas id="plantVarietyChart"></canvas></div>
+            <div class="chart"><canvas id="temperatureChart"></canvas></div>
+            <div class="chart"><canvas id="leafColorChart"></canvas></div>
+            <div class="chart"><canvas id="humidityChart"></canvas></div>
+            <div class="chart"><canvas id="growthStageChart"></canvas></div>
+            <div class="chart"><canvas id="heightOverTimeChart"></canvas></div>
+          </div>
+        
+          <!-- <footer>Last updated 20.3.2025, 4:00 PM</footer>-->
+        </section>        
+          
+      </main>      
+  </div>
+
+  <script src="../static/script.js"></script>
+</body>
+</html>

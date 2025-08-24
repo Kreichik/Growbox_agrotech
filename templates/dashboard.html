@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gaugeJS/dist/gauge.min.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            max-height:50vh;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .title {
+            font-size: 2em;
+            margin: 20px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .block {
+            flex: 1 1 45%;
+            box-sizing: border-box;
+            margin: 2%;
+            text-align: center;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+        #gauge {
+            width: 100%;
+            height: 200px;
+        }
+        #lightIndicator {
+            width: 45%;
+            display: inline-block;
+        }
+        .light-value {
+            margin-top: 10px;
+            font-size: 1.2em;
+        }
+        .last-updated {
+            margin-top: 20px;
+            font-size: 1em;
+        }
+        p {
+            margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+            .block {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="title">IOT Dashboard</div>
+    <div class="container">
+        <div class="block">
+            <canvas id="gauge"></canvas>
+            <p id="temperatureValue">Temperature: </p>
+        </div>
+        <div class="block">
+            <canvas id="humidityChart"></canvas>
+            <p>Humidity Chart</p>
+        </div>
+        <div class="block">
+            <canvas id="soilChart"></canvas>
+            <p>Substrate Moisture Chart</p>
+        </div>
+        <div class="block">
+            <img id="lightIndicator" src="{{ url_for('static', filename='off.png') }}" alt="Light Indicator">
+            <div class="light-value" id="lightValue">Light Level: </div>
+        </div>
+    </div>
+    <div class="last-updated" id="lastUpdated">Last Updated: </div>
+
+    <script>
+        let gauge;
+        let humidityChart;
+        let soilChart;
+
+        function updateData() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    // Update Temperature Gauge
+                    if (gauge) {
+                        gauge.set(data.air_temperature);
+                    } else {
+                        gauge = new Gauge(document.getElementById("gauge")).setOptions({
+                            angle: 0,
+                            lineWidth: 0.44,
+                            pointer: {
+                                length: 0.6,
+                                strokeWidth: 0.035,
+                                color: '#e0e0e0'
+                            },
+                            limitMax: false,
+                            colorStart: '#1e90ff',
+                            colorStop: '#ff6347',
+                            strokeColor: '#333',
+                            generateGradient: true,
+                            percentColors: [
+                                [0.0, "#1e90ff"],
+                                [0.6, "#ffff00"],
+                                [0.70, "#32cd32"],
+                                [1.0, "#ff6347"]
+                            ]
+                        });
+                        gauge.maxValue = 30;
+                        gauge.setMinValue(10);
+                        gauge.animationSpeed = 35;
+                        gauge.set(data.air_temperature);
+                    }
+                    document.getElementById('temperatureValue').innerText = 'Temperature: ' + data.air_temperature.toFixed(2) + '°C';
+
+                    // Update Humidity Chart
+                    if (humidityChart) {
+                        // Clear existing data
+                        humidityChart.data.labels = [];
+                        humidityChart.data.datasets[0].data = [];
+
+                        // Add new data points
+                        data.humidity_data.forEach(point => {
+                            const date = new Date(point.timestamp);
+                            const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            humidityChart.data.labels.push(time);
+                            humidityChart.data.datasets[0].data.push(point.air_humidity);
+                        });
+
+                        humidityChart.update();
+                    } else {
+                        const ctx = document.getElementById('humidityChart').getContext('2d');
+                        humidityChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: data.humidity_data.map(point => {
+                                    const date = new Date(point.timestamp);
+                                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                }),
+                                datasets: [{
+                                    label: 'Humidity',
+                                    data: data.humidity_data.map(point => point.air_humidity),
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 1,
+                                    fill: false
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: false,
+                                        min: 10,
+                                        ticks: {
+                                            color: '#e0e0e0'
+                                        }
+                                    },
+                                    x: {
+                                        ticks: {
+                                            color: '#e0e0e0'
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        labels: {
+                                            color: '#e0e0e0'
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Update Soil Moisture Chart
+                    if (soilChart) {
+                        soilChart.data.datasets[0].data = [
+                            data.soil1,
+                            data.soil2,
+                            data.soil3,
+                            data.soil4,
+                            data.soil5
+                        ];
+                        soilChart.update();
+                    } else {
+                        const ctx = document.getElementById('soilChart').getContext('2d');
+                        soilChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: ['Shelf 1', 'Shelf 2', 'Shelf 3', 'Shelf 4', 'Shelf 5'],
+                                datasets: [{
+                                    label: 'Substrate Moisture',
+                                    data: [
+                                        data.soil1,
+                                        data.soil2,
+                                        data.soil3,
+                                        data.soil4,
+                                        data.soil5
+                                    ],
+                                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                                    borderColor: 'rgba(153, 102, 255, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            color: '#e0e0e0'
+                                        }
+                                    },
+                                    x: {
+                                        ticks: {
+                                            color: '#e0e0e0'
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        labels: {
+                                            color: '#e0e0e0'
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Update Light Level Indicator and Value
+                    const lightIndicator = document.getElementById('lightIndicator');
+                    const lightValue = document.getElementById('lightValue');
+                    lightIndicator.src = data.light_level < 1
+                        ? "{{ url_for('static', filename='off.png') }}"
+                        : "{{ url_for('static', filename='on.png') }}";
+                    lightValue.innerText = 'Light Level: ' + data.light_level.toFixed(2) + ' lm';
+
+                    // Update Last Updated Time
+                    const lastUpdated = document.getElementById('lastUpdated');
+                    const now = new Date();
+                    lastUpdated.innerText = 'Last Updated: ' + now.toLocaleString();
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // Initial data fetch and setup interval for updates
+        updateData();
+        setInterval(updateData, 5000); // Update every 5 seconds
+    </script>
+<div class="invisible-big-button"></div>
+<style>
+  .invisible-big-button {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 99999999;
+  }
+</style>
+<script>
+  document.querySelector('.invisible-big-button').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+            document.querySelector('.invisible-big-button').remove();
+        });
+    }
+  });
+</script>
+</body>
+</html>
