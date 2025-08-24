@@ -1,0 +1,457 @@
+basePath: /
+definitions:
+  models.ErrorResponse:
+    properties:
+      error:
+        example: Invalid plant data provided
+        type: string
+    type: object
+  models.LoginResponse:
+    properties:
+      role:
+        example: admin
+        type: string
+      token:
+        example: your_jwt_token_here
+        type: string
+    type: object
+  models.Plant:
+    properties:
+      description:
+        type: string
+      floor:
+        type: string
+      group_id:
+        type: string
+      growth_days:
+        type: integer
+      growth_stage:
+        type: string
+      harvest_date:
+        type: string
+      height:
+        type: number
+      humidity:
+        type: number
+      id:
+        type: string
+      leaf_color:
+        type: string
+      name:
+        type: string
+      plant_id:
+        type: integer
+      scientific_name:
+        type: string
+      seeding_date:
+        type: string
+      temperature:
+        type: number
+    type: object
+  models.PlantListResponse:
+    properties:
+      plants:
+        items:
+          $ref: '#/definitions/models.Plant'
+        type: array
+      total:
+        example: 100
+        type: integer
+    type: object
+  models.SuccessResponse:
+    properties:
+      message:
+        example: Plant updated successfully
+        type: string
+    type: object
+  models.UpdatePlantRequest:
+    properties:
+      description:
+        type: string
+      floor:
+        type: string
+      group_id:
+        type: string
+      growth_days:
+        type: integer
+      growth_stage:
+        type: string
+      harvest_date:
+        type: string
+      height:
+        type: number
+      humidity:
+        type: number
+      leaf_color:
+        type: string
+      name:
+        type: string
+      scientific_name:
+        type: string
+      seeding_date:
+        type: string
+      temperature:
+        type: number
+    type: object
+  models.User:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      role:
+        description: '"admin" or "user"'
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: your-email@example.com
+    name: Hamed Frogh
+  description: This is the backend for MicroTrack application.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: MicroTrack API
+  version: "1.0"
+paths:
+  /admin/promote/{username}:
+    patch:
+      consumes:
+      - application/json
+      description: Only an existing admin can promote other users
+      parameters:
+      - description: Username to promote
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Promote a user to admin
+      tags:
+      - Admin - Auth
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token if credentials are valid.
+      parameters:
+      - description: User login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Login a user
+      tags:
+      - Public - Auth
+  /plants:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all plants
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.PlantListResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all plants
+      tags:
+      - Public - Plants
+    post:
+      consumes:
+      - application/json
+      description: Create a new plant entry with details like name, seeding date,
+        and harvesting date.
+      parameters:
+      - description: Plant data
+        in: body
+        name: plant
+        required: true
+        schema:
+          $ref: '#/definitions/models.Plant'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Plant'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a new plant
+      tags:
+      - Admin - Plants
+  /plants/{plant_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a plant entry by its name
+      parameters:
+      - description: Plant ID
+        in: path
+        name: plant_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a plant
+      tags:
+      - Admin - Plants
+    put:
+      consumes:
+      - application/json
+      description: Update plant information such as seeding date, harvesting date,
+        etc.
+      parameters:
+      - description: Plant ID
+        in: path
+        name: plant_id
+        required: true
+        type: integer
+      - description: Updated plant data
+        in: body
+        name: plant
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdatePlantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an existing plant
+      tags:
+      - Admin - Plants
+  /plants/delete-by-name/{name}:
+    delete:
+      description: Remove all plant entries that match the given name
+      parameters:
+      - description: Plant Name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete all plants by name
+      tags:
+      - Admin - Plants
+  /plants/search:
+    get:
+      consumes:
+      - application/json
+      description: Search plants based on multiple filters
+      parameters:
+      - description: Plant name
+        in: query
+        name: name
+        type: string
+      - description: Plant ID
+        in: query
+        name: plant_id
+        type: integer
+      - description: Group ID
+        in: query
+        name: group_id
+        type: string
+      - description: Scientific name
+        in: query
+        name: scientific_name
+        type: string
+      - description: Description
+        in: query
+        name: description
+        type: string
+      - description: Growth Stage
+        in: query
+        name: growth_stage
+        type: string
+      - description: Minimum Growth Days
+        in: query
+        name: min_growth_days
+        type: integer
+      - description: Maximum Growth Days
+        in: query
+        name: max_growth_days
+        type: integer
+      - description: Limit number of results (default 10, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Skip number of results
+        in: query
+        name: skip
+        type: integer
+      - description: Sort field (e.g., name, growth_days)
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order asc or desc
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PlantListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Search plants
+      tags:
+      - Public - Plants
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account (default role is \"user\" unless specified).
+      parameters:
+      - description: User signup data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Public - Auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
